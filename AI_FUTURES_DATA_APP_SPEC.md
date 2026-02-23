@@ -8,7 +8,15 @@ framework: "Streamlit"
 database: "SQLite"
 timeseries_store: "Parquet"
 app_profile: "futures"
-root_path: "/Users/user/Python-Projects/RST"
+root_path: "/Users/rubetron/Python-Projects/RST"
+provider: "Databento"
+provider_defaults:
+  dataset: "GLBX.MDP3"
+  schemas:
+    - "ohlcv-1d"
+    - "definition"
+  stype_in: "parent"
+  stype_out: "instrument_id"
 constraints:
   - "Futures-only scope."
   - "Daily-frequency data only."
@@ -46,11 +54,21 @@ Build a local web app that manages futures data end-to-end for systematic trend-
 
 ## Functional
 1. Ingest local raw files into curated contract-level parquet.
-2. Download + ingest new data from provider on demand.
+2. Download + ingest new data from Databento on demand.
 3. Ingest local definition files separately.
 4. Store symbol mappings, definitions, coverage, and parent metadata in SQLite.
 5. Build full and incremental continuous series from saved rolling definitions.
 6. Visualize contract and continuous data in Streamlit.
+
+## Databento-Specific
+1. Use Databento Historical API as the default provider.
+2. Default dataset: `GLBX.MDP3`.
+3. Required schemas:
+   - `ohlcv-1d` for daily contract bars.
+   - `definition` for instrument metadata.
+4. API key loaded from `config/databento.env` as `DATABENTO_API_KEY`.
+5. Request ranges based on existing coverage and download only missing windows.
+6. Handle Databento 422 range/entitlement errors explicitly with actionable UI messages.
 
 ## Non-Functional
 1. Reproducible and idempotent ingestion behavior.
@@ -166,12 +184,14 @@ project/
       continuous/
         builder.py
   config/
-    provider.env          # gitignored, contains API key
+    databento.env         # gitignored, contains DATABENTO_API_KEY
   data/
     metadata.db
     raw/
-      <PARENT>/
-      definitions/
+      ohlcv-1d/
+        <PARENT>/
+      definition/
+        <PARENT>/
     curated/
       ohlcv-1d/
       continuous/
@@ -187,10 +207,10 @@ project/
 5. App updates `instrument_map`, `symbol_coverage`, and `ingest_files`.
 
 ## 2) Download + Ingest (On Demand)
-1. User sets API config, dataset, schema.
+1. User sets Databento config, dataset, schema.
 2. App computes planned date ranges per parent from coverage table.
-3. Optional cost estimate.
-4. Download raw files to `data/raw/<parent>/`.
+3. Optional Databento cost estimate.
+4. Download raw files to `data/raw/ohlcv-1d/<parent>/`.
 5. Ingest downloaded files into curated + DB updates.
 
 ## 3) Ingest Local Definition Files
@@ -215,7 +235,7 @@ project/
 # Constraints
 1. Futures-only feature set in this app.
 2. Daily bars only.
-3. API keys loaded from env file (`config/provider.env`) and never committed.
+3. Databento API key loaded from env file (`config/databento.env`) and never committed.
 4. Raw files are append-only archive; no overwrite/mutation.
 5. No destructive command or schema drop without explicit user request.
 
