@@ -8,7 +8,7 @@ framework: "Streamlit"
 database: "SQLite"
 timeseries_store: "Parquet"
 app_profile: "futures"
-root_path: "/Users/rubetron/Python-Projects/RST"
+root_path: "/Users/user/Python-Projects/RST"
 provider: "Databento"
 provider_defaults:
   dataset: "GLBX.MDP3"
